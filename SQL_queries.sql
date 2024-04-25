@@ -200,3 +200,51 @@ order by avg(`Tax 5%`) desc
 select `Customer type` , round(avg(`Tax 5%`),2) as Avg_tax  from saleswalmart s 
 group by `Customer type` 
 order by avg(`Tax 5%`) desc
+
+
+-- -----------------------Customer-------------------------------------------
+#1. How many unique customer types does the data have?
+select distinct(`Customer type`) from saleswalmart s 
+
+#2. How many unique payment methods does the data have?
+select distinct(Payment) from saleswalmart s 
+
+#3. What is the most common customer type?
+ #chưa biết phổ biến nhất vì cái gì
+
+#4. Which customer type buys the most?
+select `Customer type`, count(*) as buys_the_most  from saleswalmart s 
+group by `Customer type` 
+ 
+#5. What is the gender of most of the customers?
+select Gender , count(*) as gender_of_most_of  from saleswalmart s 
+group by Gender 
+=> Female 501
+
+#6. What is the gender distribution per branch?
+select  Branch,Gender, count(Gender) as gender_of_most_of  from saleswalmart s 
+group by Gender ,Branch 
+
+#7. Which time of the day do customers give most ratings?
+ select Time_of_date, avg(Rating) as avg_rating  from saleswalmart s 
+ group by Time_of_date 
+ order by avg(Rating) desc
+
+
+#8. Which time of the day do customers give most ratings per branch?
+ select Time_of_date, Branch  ,avg(Rating) as avg_rating  from saleswalmart s 
+ group by Time_of_date, Branch 
+ order by avg(Rating) desc
+
+ 
+#9. Which day fo the week has the best avg ratings?
+ select day_name ,avg(Rating) as avg_rating  from saleswalmart s 
+ group by day_name
+ order by avg(Rating) desc
+ #=> Monday
+ 
+#10. Which day of the week has the best average ratings per branch?
+  select day_name, Branch  ,avg(Rating) as avg_rating  from saleswalmart s 
+ group by day_name,Branch  
+ order by avg(Rating) desc
+ 
