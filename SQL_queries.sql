@@ -1,331 +1,176 @@
-IMAL(10,2) NOT NULL,
-    gross_margin_pct FLOAT(11,9),
-    gross_income DECIMAL(12, 4),
-    rating FLOAT(2, 1)
-);
 
--- Data cleaning
+---------------------------------------------------------------------------------
+------------------------------------Feature Engineering---------------------------
+
+
+-- Creat column time_of_date
+
+select 
+   time,
+     (case 
+     	when 'time' between "00:00:00" and "12:00:00" then "Morning"
+        when 'time' between "12:01:00" and "16:00:00" then "Afternoon"
+        else "Evening"
+     end
+     ) as Time_of_date
+   from saleswalmart s 
+   
+   
+alter table saleswalmart add column Time_of_date varchar(20)
+
+#UPDATE COLUMN IN TABLE
+update saleswalmart 
+set Time_of_date =  (case 
+     	when 'time' between "00:00:00" and "12:00:00" then "Morning"
+        when 'time' between "12:01:00" and "16:00:00" then "Afternoon"
+        else "Evening"
+     end
+     )
+
+--- creat column day_name
+select 
+   date,
+   Dayname(date)as day_name
+  from saleswalmart s 
+
+alter table saleswalmart add column day_name varchar(20)
+
+update saleswalmart 
+set day_name = DAYNAME(DATE)
+
+--- creat column month_name
+select 
+   date,
+   Monthname(date)as month_name
+  from saleswalmart s 
+
+alter table saleswalmart add column month_name varchar(20)
+
+update saleswalmart 
+set month_name = monthname(date) 
+
+-----------------------Business Questions To Answer-------------
+
+#How many unique cities does the data have?
+select count(distinct city ) as Distinct_city from saleswalmart s 
+
+#In which city is each branch?
+select distinct city,branch from saleswalmart s 
+
+----------------Product------------
+#1. How many unique product lines does the data have?
+select distinct `Product line`  from saleswalmart s 
+
+#2. What is the most common payment method?
+select Payment, count(payment)as most_common_payment  from saleswalmart s 
+group by Payment 
+order by most_common_payment desc limit 1
+# => most_common_payment is Ewallet 
+ 
+#3. What is the most selling product line?
 SELECT
-	*
-FROM sales;
+    `Product line` ,SUM(quantity) as qty
+	FROM saleswalmart s 
+GROUP BY `Product line` 
+ORDER BY qty desc ;`
+#productline and sum quanlity of productline
+
+#4. What is the total revenue by month?
+Select Month_name, sum(total) as Total_Revenue From saleswalmart s 
+ group by month_name
+ order by total_revenue 
 
 
--- Add the time_of_day column
-SELECT
-	time,
-	(CASE
-		WHEN `time` BETWEEN "00:00:00" AND "12:00:00" THEN "Morning"
-        WHEN `time` BETWEEN "12:01:00" AND "16:00:00" THEN "Afternoon"
-        ELSE "Evening"
-    END) AS time_of_day
-FROM sales;
+#5. What month had the largest COGS? 
+Select month_name, sum(cogs) as COGS from saleswalmart s 
+group by month_name
+order by COGS desc limit 1
+=> January Had 110,759
+
+#6. What product line had the largest revenue?
+Select `Product line` , sum(total) as Total_Revenue 
+From saleswalmart s 
+GROUP BY `Product line` 
+order by total_revenue desc limit 1
+=> Food and beverages had 56,144.844
 
 
-ALTER TABLE sales ADD COLUMN time_of_day VARCHAR(20);
-
--- For this to work turn off safe mode for update
--- Edit > Preferences > SQL Edito > scroll down and toggle safe mode
--- Reconnect to MySQL: Query > Reconnect to server
-UPDATE sales
-SET time_of_day = (
-	CASE
-		WHEN `time` BETWEEN "00:00:00" AND "12:00:00" THEN "Morning"
-        WHEN `time` BETWEEN "12:01:00" AND "16:00:00" THEN "Afternoon"
-        ELSE "Evening"
-    END
-);
+#7. What is the city with the largest revenue?
+Select `city` , sum(total) as Total_Revenue 
+ From saleswalmart s 
+GROUP BY `city`
+order by total_revenue desc limit 1
+=> naypyitaw had 110,568.7065
 
 
--- Add day_name column
-SELECT
-	date,
-	DAYNAME(date)
-FROM sales;
+#8. What product line had the largest VAT?
 
-ALTER TABLE sales ADD COLUMN day_name VARCHAR(10);
+ Select `Product line`, avg(tax 5%) as VAT
+From saleswalmart s 
+ group by `Product line` 
+ order by VAT desc 
 
-UPDATE sales
-SET day_name = DAYNAME(date);
-
-
--- Add month_name column
-SELECT
-	date,
-	MONTHNAME(date)
-FROM sales;
-
-ALTER TABLE sales ADD COLUMN month_name VARCHAR(10);
-
-UPDATE sales
-SET month_name = MONTHNAME(date);
-
--- --------------------------------------------------------------------
--- ---------------------------- Generic ------------------------------
--- --------------------------------------------------------------------
--- How many unique cities does the data have?
+#9. Fetch each product line and add a column to those product line showing "Good", "Bad". Good if its greater than average sales
+#step 1 avg product line
+  SELECT product line,
+  SUM(total) AS sales,
+        AVG(SUM(total)) AS avg_sales
+    FROM saleswalmart
+    GROUP BY product line
+#step 2 add column
 SELECT 
-	DISTINCT city
-FROM sales;
-
--- In which city is each branch?
+    *,
+    CASE
+        WHEN sales > avg_sales THEN 'Good'
+        ELSE 'Bad'
+    END AS Performance
+FROM (
+    SELECT
+        product_line,
+        SUM(total) AS sales,
+        AVG(SUM(total))  AS avg_sales
+    FROM saleswalmart
+    GROUP BY product_line
+) AS product_sales;
+------------------
+9. Fetch each product line and add a column to those product line showing "Good", "Bad". Good if its greater than average sales
+ sai đề vì tổng sale đâu so sánh vớ trung bình tổng sale 1 productline 
 SELECT 
-	DISTINCT city,
-    branch
-FROM sales;
-
--- --------------------------------------------------------------------
--- ---------------------------- Product -------------------------------
--- --------------------------------------------------------------------
-
--- How many unique product lines does the data have?
-SELECT
-	DISTINCT product_line
-FROM sales;
-
-
--- What is the most selling product line
-SELECT
-	SUM(quantity) as qty,
-    product_line
-FROM sales
-GROUP BY product_line
-ORDER BY qty DESC;
-
--- What is the most selling product line
-SELECT
-	SUM(quantity) as qty,
-    product_line
-FROM sales
-GROUP BY product_line
-ORDER BY qty DESC;
-
--- What is the total revenue by month
-SELECT
-	month_name AS month,
-	SUM(total) AS total_revenue
-FROM sales
-GROUP BY month_name 
-ORDER BY total_revenue;
+    *,
+    CASE
+        WHEN sales > avg_sales THEN 'Good'
+        ELSE 'Bad'
+    END AS Performance
+FROM (
+    SELECT
+        product line,
+        SUM(total) AS sales,
+        AVG(SUM(total))  AS avg_sales
+    FROM saleswalmart
+    GROUP BY product line
+) AS product_sales;
 
 
--- What month had the largest COGS?
-SELECT
-	month_name AS month,
-	SUM(cogs) AS cogs
-FROM sales
-GROUP BY month_name 
-ORDER BY cogs;
+ SELECT
+  `Product line`,
+  SUM(total) AS sales,
+  AVG(total) AS AVG_SALES
+FROM
+  saleswalmart
+GROUP BY
+  `Product line`;
 
+#10. Which branch sold more products than average product sold?
+select Branch,sum(Quantity) as sales, avg(Quantity) as AVG_Quanlity from saleswalmart s 
+group by branch 
+Having sum(quantity) > avg (quantity)
 
--- What product line had the largest revenue?
-SELECT
-	product_line,
-	SUM(total) as total_revenue
-FROM sales
-GROUP BY product_line
-ORDER BY total_revenue DESC;
+#11. What is the most common product line by gender? # count(gender) as total_gd là số lượng nam, nữ trong tưng product line
+select `Product line`  , Gender, count(gender) as total_gd  from saleswalmart s 
+group by `Product line`, Gender 
+order  by count(gender) desc
 
--- What is the city with the largest revenue?
-SELECT
-	branch,
-	city,
-	SUM(total) AS total_revenue
-FROM sales
-GROUP BY city, branch 
-ORDER BY total_revenue;
-
-
--- What product line had the largest VAT?
-SELECT
-	product_line,
-	AVG(tax_pct) as avg_tax
-FROM sales
-GROUP BY product_line
-ORDER BY avg_tax DESC;
-
-
--- Fetch each product line and add a column to those product 
--- line showing "Good", "Bad". Good if its greater than average sales
-
-SELECT 
-	AVG(quantity) AS avg_qnty
-FROM sales;
-
-SELECT
-	product_line,
-	CASE
-		WHEN AVG(quantity) > 6 THEN "Good"
-        ELSE "Bad"
-    END AS remark
-FROM sales
-GROUP BY product_line;
-
-
--- Which branch sold more products than average product sold?
-SELECT 
-	branch, 
-    SUM(quantity) AS qnty
-FROM sales
-GROUP BY branch
-HAVING SUM(quantity) > (SELECT AVG(quantity) FROM sales);
-
-
--- What is the most common product line by gender
-SELECT
-	gender,
-    product_line,
-    COUNT(gender) AS total_cnt
-FROM sales
-GROUP BY gender, product_line
-ORDER BY total_cnt DESC;
-
--- What is the average rating of each product line
-SELECT
-	ROUND(AVG(rating), 2) as avg_rating,
-    product_line
-FROM sales
-GROUP BY product_line
-ORDER BY avg_rating DESC;
-
--- --------------------------------------------------------------------
--- --------------------------------------------------------------------
-
--- --------------------------------------------------------------------
--- -------------------------- Customers -------------------------------
--- --------------------------------------------------------------------
-
--- How many unique customer types does the data have?
-SELECT
-	DISTINCT customer_type
-FROM sales;
-
--- How many unique payment methods does the data have?
-SELECT
-	DISTINCT payment
-FROM sales;
-
-
--- What is the most common customer type?
-SELECT
-	customer_type,
-	count(*) as count
-FROM sales
-GROUP BY customer_type
-ORDER BY count DESC;
-
--- Which customer type buys the most?
-SELECT
-	customer_type,
-    COUNT(*)
-FROM sales
-GROUP BY customer_type;
-
-
--- What is the gender of most of the customers?
-SELECT
-	gender,
-	COUNT(*) as gender_cnt
-FROM sales
-GROUP BY gender
-ORDER BY gender_cnt DESC;
-
--- What is the gender distribution per branch?
-SELECT
-	gender,
-	COUNT(*) as gender_cnt
-FROM sales
-WHERE branch = "C"
-GROUP BY gender
-ORDER BY gender_cnt DESC;
--- Gender per branch is more or less the same hence, I don't think has
--- an effect of the sales per branch and other factors.
-
--- Which time of the day do customers give most ratings?
-SELECT
-	time_of_day,
-	AVG(rating) AS avg_rating
-FROM sales
-GROUP BY time_of_day
-ORDER BY avg_rating DESC;
--- Looks like time of the day does not really affect the rating, its
--- more or less the same rating each time of the day.alter
-
-
--- Which time of the day do customers give most ratings per branch?
-SELECT
-	time_of_day,
-	AVG(rating) AS avg_rating
-FROM sales
-WHERE branch = "A"
-GROUP BY time_of_day
-ORDER BY avg_rating DESC;
--- Branch A and C are doing well in ratings, branch B needs to do a 
--- little more to get better ratings.
-
-
--- Which day fo the week has the best avg ratings?
-SELECT
-	day_name,
-	AVG(rating) AS avg_rating
-FROM sales
-GROUP BY day_name 
-ORDER BY avg_rating DESC;
--- Mon, Tue and Friday are the top best days for good ratings
--- why is that the case, how many sales are made on these days?
-
-
-
--- Which day of the week has the best average ratings per branch?
-SELECT 
-	day_name,
-	COUNT(day_name) total_sales
-FROM sales
-WHERE branch = "C"
-GROUP BY day_name
-ORDER BY total_sales DESC;
-
-
--- --------------------------------------------------------------------
--- --------------------------------------------------------------------
-
--- --------------------------------------------------------------------
--- ---------------------------- Sales ---------------------------------
--- --------------------------------------------------------------------
-
--- Number of sales made in each time of the day per weekday 
-SELECT
-	time_of_day,
-	COUNT(*) AS total_sales
-FROM sales
-WHERE day_name = "Sunday"
-GROUP BY time_of_day 
-ORDER BY total_sales DESC;
--- Evenings experience most sales, the stores are 
--- filled during the evening hours
-
--- Which of the customer types brings the most revenue?
-SELECT
-	customer_type,
-	SUM(total) AS total_revenue
-FROM sales
-GROUP BY customer_type
-ORDER BY total_revenue;
-
--- Which city has the largest tax/VAT percent?
-SELECT
-	city,
-    ROUND(AVG(tax_pct), 2) AS avg_tax_pct
-FROM sales
-GROUP BY city 
-ORDER BY avg_tax_pct DESC;
-
--- Which customer type pays the most in VAT?
-SELECT
-	customer_type,
-	AVG(tax_pct) AS total_tax
-FROM sales
-GROUP BY customer_type
-ORDER BY total_tax;
-
--- --------------------------------------------------------------------
--- --------------------------------------------------------------------
+#12. What is the average rating of each product line?
+select `Product line` , round(AVG(Rating),2)  as AVG_rating from saleswalmart s 
+group by `Product line`
+order by AVG_rating desc  #round(AVG(Rating),2) rút gọn số thập phân
