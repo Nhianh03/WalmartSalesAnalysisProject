@@ -174,3 +174,29 @@ order  by count(gender) desc
 select `Product line` , round(AVG(Rating),2)  as AVG_rating from saleswalmart s 
 group by `Product line`
 order by AVG_rating desc  #round(AVG(Rating),2) rút gọn số thập phân
+
+
+
+----------------Sales------------
+
+#1. Number of sales made in each time of the day per weekday
+select Time_of_date , count(*) as total_sale from saleswalmart s 
+where day_name = 'monday'
+group by Time_of_date 
+order by count(*) desc
+
+#2. Which of the customer types brings the most revenue = total?
+select `Customer type` , sum(Total) as Total_revenue from saleswalmart s 
+group by `Customer type` 
+order by sum(`Unit price`*Quantity) desc 
+
+
+#3. Which city has the largest tax percent/ VAT (Value Added Tax) = avg Tax 5%?
+select City, round(avg(`Tax 5%`),2) as Avg_tax  from saleswalmart s 
+group by City 
+order by avg(`Tax 5%`) desc
+
+#4. Which customer type pays the most in VAT?
+select `Customer type` , round(avg(`Tax 5%`),2) as Avg_tax  from saleswalmart s 
+group by `Customer type` 
+order by avg(`Tax 5%`) desc
